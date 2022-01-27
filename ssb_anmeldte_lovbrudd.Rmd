@@ -3,8 +3,7 @@ title: "Tech Graduate Case"
 author: "Julie Tverfjell"
 date: "1/28/2022"
 output:
-  pdf_document: default
-  pdf: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
