@@ -1,0 +1,196 @@
+---
+title: "Tech Graduate Case"
+author: "Julie Tverfjell"
+date: "1/28/2022"
+output:
+  pdf_document: default
+  pdf: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE, error=FALSE, tidy.opts=list(width.cutoff=60), tidy=TRUE)
+
+# installing necessary packages (remove hashtags before running first time)
+# install.packages("rjstat")
+# install.packages("httr")
+# install.packages("ggplot2")
+# install.packages("dplyr")
+```
+
+# Henting av data
+
+Data er hentet fra ssb.no ved hjelp av JSON-spørringer. Dataene inneholder informasjon om anmeldte lovbrudd, sortert etter lovbruddsype og gjerningssted. 
+
+```{r}
+library(httr)
+library(rjstat)
+
+url <- "https://data.ssb.no/api/v0/en/table/08486"
+
+query <- '
+{"query":[{"code":"Gjerningssted","selection":{"filter":"item","values":
+["01-97","03","30","34","38","42","11","46","15","50","18","54","21","97"]}},
+{"code":"LovbruddKrim","selection":{"filter":"vs:LovGruppeKrimA","values":
+["1AAAAA-9ZZZZz","1AAAAA-1ZZZZz","2AAAAA-2ZZZZz","3AAAAA-3ZZZZz","4AAAAA-4ZZZZz",
+"5AAAAA-5ZZZZz","6AAAAA-6ZZZZz","7AAAAA-7ZZZZz","8AAAAA-8ZZZZz","9AAAAA-9ZZZZz"]}},
+{"code":"ContentsCode","selection":{"filter":"item","values":["AnmeldteLovbrudd"]}},
+{"code":"Tid","selection":{"filter":"item","values":["2002","2003","2004","2005","2006",
+"2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017",
+"2018","2019","2020"]}}],"response":{"format":"json-stat2"}}
+'
+
+response <- POST(url, body = query, encode = "json", verbose())
+
+data <- fromJSONstat(content(response, "text"))
+```
+\newpage
+
+# Lovbruddsgrupper i 2003
+
+Diagrammet viser andelen rapporterte lovbrudd innenfor hver lovbruddstype. Tallene er på landsbasis. 
+
+```{r, echo = FALSE}
+library(ggplot2)
+library(dplyr)
+
+data <- data %>% 
+  select(-contents) %>% 
+  filter(is.na(value) == FALSE) 
+
+norge <- data %>% 
+  filter(`scene of crime` == "The whole country") %>% 
+  filter(!`type of offence` %in% c("All groups of offences")) %>% 
+  filter(year == "2003")
+
+norge_plot <- ggplot(norge, aes(x="", y=value, fill=`type of offence`)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0) +
+  ggtitle("Diagram 1") +
+  labs(fill="Lovbruddstyper") +
+  theme(axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.border = element_blank(),
+  panel.grid=element_blank(),
+  axis.ticks = element_blank(),
+  axis.text.x=element_blank())
+
+norge_plot
+```
+\newpage
+
+# Lovbruddsgrupper i 2020
+
+Diagrammet viser andelen rapporterte lovbrudd innenfor hver lovbruddstype. Tallene er på landsbasis. 
+
+```{r, echo = FALSE}
+norge <- data %>% 
+  filter(`scene of crime` == "The whole country") %>% 
+  filter(!`type of offence` %in% c("All groups of offences")) %>% 
+  filter(year == "2020")
+
+norge_plot <- ggplot(norge, aes(x="", y=value, fill=`type of offence`)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0) +
+  ggtitle("Diagram 2") +
+  labs(fill="Lovbruddstyper") +
+  theme(axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.border = element_blank(),
+  panel.grid=element_blank(),
+  axis.ticks = element_blank(),
+  axis.text.x=element_blank())
+
+norge_plot
+```
+\newpage
+
+# Utviklingen av antall lovbrudd per fylke
+
+```{r, echo = FALSE}
+total <- data %>% 
+  filter(`type of offence` == "All groups of offences") %>% 
+  filter(!`scene of crime` %in% c("Norway, unknown county", "The whole country", "Agder", "Innlandet", "Troms og Finnmark - Romsa ja Finnmárku", "Vestfold og Telemark", "Vestland", "Viken"))
+
+total$year <- as.numeric(total$year)
+
+plot <- ggplot(total, aes(x = year, y = value)) +
+  geom_line(aes(color = `scene of crime`), size = 1) +
+  ggtitle("Diagram 3") +
+  labs(y="Antall lovbrudd", x="År", color="Fylke") +
+  theme_minimal()
+
+plot
+```
+\newpage
+
+# Appendix
+
+### Diagram 1
+```{r, eval=FALSE}
+data <- data %>% 
+  select(-contents) %>% 
+  filter(is.na(value) == FALSE) 
+
+norge <- data %>% 
+  filter(`scene of crime` == "The whole country") %>% 
+  filter(!`type of offence` %in% c("All groups of offences")) %>% 
+  filter(year == "2003")
+
+norge_plot <- ggplot(norge, aes(x="", y=value, fill=`type of offence`)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0) +
+  ggtitle("Diagram 1") +
+  labs(fill="Lovbruddstyper") +
+  theme(axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.border = element_blank(),
+  panel.grid=element_blank(),
+  axis.ticks = element_blank(),
+  axis.text.x=element_blank())
+
+norge_plot
+```
+
+
+
+### Diagram 2
+```{r, eval=FALSE}
+norge <- data %>% 
+  filter(`scene of crime` == "The whole country") %>% 
+  filter(!`type of offence` %in% c("All groups of offences")) %>% 
+  filter(year == "2020")
+
+norge_plot <- ggplot(norge, aes(x="", y=value, fill=`type of offence`)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0) +
+  ggtitle("Diagram 2") +
+  labs(fill="Lovbruddstyper") +
+  theme(axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.border = element_blank(),
+  panel.grid=element_blank(),
+  axis.ticks = element_blank(),
+  axis.text.x=element_blank())
+
+norge_plot
+```
+
+
+### Diagram 3
+```{r, eval=FALSE}
+total <- data %>% 
+  filter(`type of offence` == "All groups of offences") %>% 
+  filter(!`scene of crime` %in% c("Norway, unknown county", "The whole country", "Agder",
+                                  "Innlandet", "Troms og Finnmark - Romsa ja Finnmárku",
+                                  "Vestfold og Telemark", "Vestland", "Viken"))
+
+total$year <- as.numeric(total$year)
+
+plot <- ggplot(total, aes(x = year, y = value)) +
+  geom_line(aes(color = `scene of crime`), size = 1) +
+  ggtitle("Diagram 3") +
+  labs(y="Antall lovbrudd", x="År", color="Fylke") +
+  theme_minimal()
+
+plot
+```
